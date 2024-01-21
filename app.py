@@ -1,6 +1,7 @@
 import cv2, time 
 import numpy as np
 
+
 video = cv2.VideoCapture(0)
 
 target_color = 	(255, 193, 204)
@@ -21,7 +22,7 @@ deltaWeight = .3
 Things to take in to consideration for confidence of object,
 Color, how far away from a target color is the contour
 Erraticness, how far away from the already predicted position is the contour
-
+Size of Target
 All the above?
 """
 
@@ -78,8 +79,7 @@ while True:
     if avgCountThisFrame > 0:
         avgXThisFrame = avgXThisFrame / avgCountThisFrame
         avgYThisFrame = avgYThisFrame / avgCountThisFrame
-        print(avgXThisFrame)
-        print(avgYThisFrame)
+
 
         cv2.rectangle(frame, (int(avgXThisFrame), int(avgYThisFrame)), (int(avgXThisFrame) + 100, int(avgYThisFrame) + 100), (255, 0 , 0), 2)
 
