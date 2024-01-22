@@ -1,6 +1,7 @@
 import keyboard
 import asyncio
 import time
+#write a line to import a file called inputModule.py
 
 #signal system, chatGPT thank you
 #all this code is running under the assumption of one entity, the axolotl.

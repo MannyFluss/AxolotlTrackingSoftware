@@ -1,6 +1,15 @@
 import cv2, time 
 import numpy as np
+import inputModule as im
+from typing import List
 
+
+#create areas for the axolotl input
+areas : List[im.AreaInputController] = []
+
+areas.append(im.AreaInputController(im.AreaDetector(0,0,100,100),im.InputEmitter("t")))
+
+###
 
 video = cv2.VideoCapture(0)
 
@@ -25,6 +34,9 @@ Erraticness, how far away from the already predicted position is the contour
 Size of Target
 All the above?
 """
+
+
+
 
 while True:
     check, frame = video.read()    
@@ -91,13 +103,15 @@ while True:
             deltaY = avgYThisFrame - predictedPositionY
             predictedPositionX += deltaX * deltaWeight
             predictedPositionY += deltaY * deltaWeight
-            print(predictedPositionX)
-            print(predictedPositionY)
 
 
     if predictedPositionY and predictedPositionX:
         cv2.rectangle(frame, (int(predictedPositionX), int(predictedPositionY)), (int(predictedPositionX) + 100, int(predictedPositionY) + 100), (0, 0 , 255), 2)
 
+        for area in areas:
+            area.poll_position(predictedPositionX,predictedPositionY)
+            cv2.rectangle(frame, (area.areaDetector.x, area.areaDetector.y), 
+                      (area.areaDetector.x + area.areaDetector.width, area.areaDetector.y + area.areaDetector.height), (0, 255, 255), 2)
 
     #cv2.imshow("capturing",gray)
     cv2.imshow("axolotlTime",frame)
