@@ -36,9 +36,11 @@ All the above?
 """
 
 
-
+frames = 0
 
 while True:
+    
+
     check, frame = video.read()    
     #grayscale for higher contrast
     gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
@@ -47,7 +49,9 @@ while True:
     if first_frame is None:
         print("starting display.")
         first_frame = gray
+        frames += 1
         continue
+    print(frames)
     delta_frame = cv2.absdiff(first_frame,gray)
     threshold_frame = cv2.threshold(delta_frame,50,255,cv2.THRESH_BINARY)[1]
     threshold_frame = cv2.dilate(threshold_frame,None,iterations=3)
@@ -58,7 +62,37 @@ while True:
     avgYThisFrame = 0
     avgCountThisFrame = 0
     #later create some sort of confidence scale to update the average, based on color
+    alpha = 0.95  # Weight for updating, small value for slow adaptation
 
+    for contour in cntr:
+        contour_meets_criteria = True  # Your criteria for including a contour
+        print("sss")
+        if contour_meets_criteria:
+            print("a")
+            
+            # Create a mask for the contour
+            mask = np.zeros_like(gray)  # Make sure gray  is your grayscale image
+            cv2.drawContours(mask, [contour], -1, 255, cv2.FILLED)
+            
+            # Convert the mask to boolean for indexing
+            mask_bool = mask.astype(bool)
+            
+            # Convert the current frame to grayscale (already grayscale, so this step is for clarity)
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
+
+            # Perform the weighted blend with the grayscale images
+            # Note: Use np.where to selectively update parts of first_frame
+            first_frame = np.where(mask_bool, cv2.addWeighted(first_frame, 1-alpha, frame_gray, alpha, 0), first_frame)
+
+
+
+
+
+
+
+
+
+#####
 
     for i, contour in enumerate(cntr):
 #####
@@ -115,7 +149,11 @@ while True:
 
     #cv2.imshow("capturing",gray)
     cv2.imshow("axolotlTime",frame)
+
+
+
     key=cv2.waitKey(1)
+    frames += 1
     if key==ord('q'):
         print("exiting")
         break
