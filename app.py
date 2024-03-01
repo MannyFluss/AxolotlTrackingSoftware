@@ -27,6 +27,8 @@ predictedPositionX = None
 predictedPositionY = None
 
 deltaWeight = .3
+alpha = 0.95  # Weight for updating, small value for slow adaptation
+
 """
 Things to take in to consideration for confidence of object,
 Color, how far away from a target color is the contour
@@ -62,13 +64,10 @@ while True:
     avgYThisFrame = 0
     avgCountThisFrame = 0
     #later create some sort of confidence scale to update the average, based on color
-    alpha = 0.95  # Weight for updating, small value for slow adaptation
 
     for contour in cntr:
         contour_meets_criteria = True  # Your criteria for including a contour
-        print("sss")
         if contour_meets_criteria:
-            print("a")
             
             # Create a mask for the contour
             mask = np.zeros_like(gray)  # Make sure gray  is your grayscale image
