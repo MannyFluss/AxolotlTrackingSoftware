@@ -40,8 +40,11 @@ target_color_range = 50
 chunk_size = 10
 show_chunks = True  # Set this to True to show the chunks, False to hide them
 
+# the predicted position
+currPositionX = None
+currPositionY = None
 
-
+delta = .1
 
 while True:
     check, frame = video.read()
@@ -51,7 +54,23 @@ while True:
 
     frame = cv2.GaussianBlur(frame, (21, 21), 0)
     position = process_frame(frame, target_color, target_color_range, chunk_size, show_chunks)
-    print(position)
+    
+
+    if position is not None:
+        #initialize position
+        if currPositionY == None:
+            currPositionX = position[0]
+            currPositionY = position[1]
+        currPositionX += (position[0] - currPositionX) * delta
+        currPositionY += (position[1] - currPositionY) * delta
+        cv2.circle(frame, (int(currPositionX), int(currPositionY)), 10, (0, 255, 0), -1)
+
+
+        #need to go back to get the areas stuff    
+        for area in areas:
+            area.poll_position(currPositionX,currPositionY)
+            cv2.rectangle(frame, (area.areaDetector.x, area.areaDetector.y), 
+                        (area.areaDetector.x + area.areaDetector.width, area.areaDetector.y + area.areaDetector.height), (0, 255, 255), 2)
 
 
     cv2.imshow("Axolotl Detection", frame)
@@ -65,9 +84,6 @@ video.release()
 cv2.destroyAllWindows()
 
 '''
-for area in areas:
-    area.poll_position(predictedPositionX,predictedPositionY)
-    cv2.rectangle(frame, (area.areaDetector.x, area.areaDetector.y), 
-                (area.areaDetector.x + area.areaDetector.width, area.areaDetector.y + area.areaDetector.height), (0, 255, 255), 2)
+
 
 '''
