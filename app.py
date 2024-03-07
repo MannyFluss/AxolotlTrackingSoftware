@@ -1,161 +1,73 @@
-import cv2, time 
+import cv2
 import numpy as np
-import inputModule as im
-from typing import List
 
+def calculate_average_color(region):
+    return np.mean(region, axis=(0, 1))
 
-#create areas for the axolotl input
-areas : List[im.AreaInputController] = []
+def is_color_close(color, target_color, threshold):
+    return np.linalg.norm(color - target_color) < threshold
 
-areas.append(im.AreaInputController(im.AreaDetector(0,0,100,100),im.InputEmitter("t")))
-
-###
+def process_frame(frame, target_color, target_color_range, chunk_size, show_chunks=False):
+    height, width, _ = frame.shape
+    positions = []
+    
+    for y in range(0, height, chunk_size):
+        for x in range(0, width, chunk_size):
+            region = frame[y:y+chunk_size, x:x+chunk_size]
+            average_color = calculate_average_color(region)
+            
+            if is_color_close(average_color, target_color, target_color_range):
+                center_position = (x + chunk_size // 2, y + chunk_size // 2)
+                positions.append(center_position)
+                
+                if show_chunks:
+                    # Draw a rectangle around the chunk
+                    cv2.rectangle(frame, (x, y), (x + chunk_size, y + chunk_size), (0, 255, 0), 2)
+    
+    if positions:
+        average_position = np.mean(positions, axis=0)
+        if show_chunks:
+            # Draw a circle at the average position
+            cv2.circle(frame, (int(average_position[0]), int(average_position[1])), 10, (0, 0, 255), -1)
+    else:
+        average_position = None
+    
+    return average_position
 
 video = cv2.VideoCapture(0)
-
-target_color = 	(255, 193, 204)
-target_color_range = 5.0
-
-
-#vid ref https://www.youtube.com/watch?v=oxmZ9zczptg&ab_channel=Iknowpython
-
-first_frame = None
-print("initalizing...")
-#more accurate prediciton of position overtime
-
-predictedPositionX = None
-predictedPositionY = None
-
-deltaWeight = .3
-alpha = 0.95  # Weight for updating, small value for slow adaptation
-
-"""
-Things to take in to consideration for confidence of object,
-Color, how far away from a target color is the contour
-Erraticness, how far away from the already predicted position is the contour
-Size of Target
-All the above?
-"""
+target_color = np.array([42,23,206])
+target_color_range = 50
+chunk_size = 10
+show_chunks = True  # Set this to True to show the chunks, False to hide them
 
 
-frames = 0
+
 
 while True:
+    check, frame = video.read()
+
+    if not check:
+        break
+
+    frame = cv2.GaussianBlur(frame, (21, 21), 0)
+    position = process_frame(frame, target_color, target_color_range, chunk_size, show_chunks)
+    print(position)
+
+
+    cv2.imshow("Axolotl Detection", frame)
     
-
-    check, frame = video.read()    
-    #grayscale for higher contrast
-    gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-    gray=cv2.GaussianBlur(gray,(21,21),0)
-    #we store the first frame as a pivot for future objects of motion
-    if first_frame is None:
-        print("starting display.")
-        first_frame = gray
-        frames += 1
-        continue
-    print(frames)
-    delta_frame = cv2.absdiff(first_frame,gray)
-    threshold_frame = cv2.threshold(delta_frame,50,255,cv2.THRESH_BINARY)[1]
-    threshold_frame = cv2.dilate(threshold_frame,None,iterations=3)
-
-    (cntr,_)=cv2.findContours(threshold_frame.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-
-    avgXThisFrame = 0
-    avgYThisFrame = 0
-    avgCountThisFrame = 0
-    #later create some sort of confidence scale to update the average, based on color
-
-    for contour in cntr:
-        contour_meets_criteria = True  # Your criteria for including a contour
-        if contour_meets_criteria:
-            
-            # Create a mask for the contour
-            mask = np.zeros_like(gray)  # Make sure gray  is your grayscale image
-            cv2.drawContours(mask, [contour], -1, 255, cv2.FILLED)
-            
-            # Convert the mask to boolean for indexing
-            mask_bool = mask.astype(bool)
-            
-            # Convert the current frame to grayscale (already grayscale, so this step is for clarity)
-            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame
-
-            # Perform the weighted blend with the grayscale images
-            # Note: Use np.where to selectively update parts of first_frame
-            first_frame = np.where(mask_bool, cv2.addWeighted(first_frame, 1-alpha, frame_gray, alpha, 0), first_frame)
-
-
-
-
-
-
-
-
-
-#####
-
-    for i, contour in enumerate(cntr):
-#####
-        avgCountThisFrame = i + 1
-        mask = np.zeros_like(gray)
-        cv2.drawContours(mask, [contour], 0, 255, -1)
-
-        # Find the average color of the contour
-        mean_color = cv2.mean(frame, mask=mask)[:3]
-
-        # Print the average color of the contour
-        #print(f"Contour {i+1} has an average color of BGR({mean_color[0]:.2f}, {mean_color[1]:.2f}, {mean_color[2]:.2f})")
-
-        color_difference = np.subtract(target_color, mean_color)
-        color_distance = np.linalg.norm(color_difference)
-        #print(color_distance)
-
-        # Check if the mean color is within the target color range
-        within_range = np.all(np.abs(color_difference) <= target_color_range)
-        if within_range:
-            print("contour is in color range")
-        # if cv2.contourArea(contour)<1000:
-        #     continue
-        (x,y,w,h)= cv2.boundingRect(contour)
-        avgXThisFrame += x
-        avgYThisFrame += y
-
-        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),3)
-    
-    if avgCountThisFrame > 0:
-        avgXThisFrame = avgXThisFrame / avgCountThisFrame
-        avgYThisFrame = avgYThisFrame / avgCountThisFrame
-
-
-        cv2.rectangle(frame, (int(avgXThisFrame), int(avgYThisFrame)), (int(avgXThisFrame) + 100, int(avgYThisFrame) + 100), (255, 0 , 0), 2)
-
-        if predictedPositionX == None and predictedPositionY == None:
-            predictedPositionX = avgXThisFrame
-            predictedPositionY = avgYThisFrame
-        else:
-            deltaX = avgXThisFrame - predictedPositionX
-            deltaY = avgYThisFrame - predictedPositionY
-            predictedPositionX += deltaX * deltaWeight
-            predictedPositionY += deltaY * deltaWeight
-
-
-    if predictedPositionY and predictedPositionX:
-        cv2.rectangle(frame, (int(predictedPositionX), int(predictedPositionY)), (int(predictedPositionX) + 100, int(predictedPositionY) + 100), (0, 0 , 255), 2)
-
-        for area in areas:
-            area.poll_position(predictedPositionX,predictedPositionY)
-            cv2.rectangle(frame, (area.areaDetector.x, area.areaDetector.y), 
-                      (area.areaDetector.x + area.areaDetector.width, area.areaDetector.y + area.areaDetector.height), (0, 255, 255), 2)
-
-    #cv2.imshow("capturing",gray)
-    cv2.imshow("axolotlTime",frame)
-
-
-
-    key=cv2.waitKey(1)
-    frames += 1
-    if key==ord('q'):
-        print("exiting")
+    key = cv2.waitKey(1)
+    if key == ord('q'):
+        print("Exiting")
         break
 
 video.release()
 cv2.destroyAllWindows()
+
+'''
+for area in areas:
+    area.poll_position(predictedPositionX,predictedPositionY)
+    cv2.rectangle(frame, (area.areaDetector.x, area.areaDetector.y), 
+                (area.areaDetector.x + area.areaDetector.width, area.areaDetector.y + area.areaDetector.height), (0, 255, 255), 2)
+
+'''

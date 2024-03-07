@@ -1,0 +1,73 @@
+import cv2, time 
+import numpy as np
+import inputModule as im
+from typing import List
+
+
+#create areas for the axolotl input
+areas : List[im.AreaInputController] = []
+
+areas.append(im.AreaInputController(im.AreaDetector(0,0,100,100),im.InputEmitter("t")))
+
+###
+
+video = cv2.VideoCapture(0)
+
+target_color = 	(255, 193, 204)
+target_color_range = 5.0
+
+
+#vid ref https://www.youtube.com/watch?v=oxmZ9zczptg&ab_channel=Iknowpython
+
+first_frame = None
+print("initalizing...")
+#more accurate prediciton of position overtime
+
+predictedPositionX = None
+predictedPositionY = None
+
+deltaWeight = .3
+alpha = 0.95  # Weight for updating, small value for slow adaptation
+
+"""
+Things to take in to consideration for confidence of object,
+Color, how far away from a target color is the contour
+Erraticness, how far away from the already predicted position is the contour
+Size of Target
+All the above?
+"""
+
+
+frames = 0
+
+while True:
+    
+
+    check, frame = video.read()    
+    #grayscale for higher contrast
+    #gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+    frame=cv2.GaussianBlur(frame,(21,21),0)
+    #we store the first frame as a pivot for future objects of motion
+
+    cv2.imshow("axolotlTime",frame)
+
+
+
+    key=cv2.waitKey(1)
+    frames += 1
+    if key==ord('q'):
+        print("exiting")
+        break
+
+video.release()
+cv2.destroyAllWindows()
+
+
+
+'''
+        for area in areas:
+            area.poll_position(predictedPositionX,predictedPositionY)
+            cv2.rectangle(frame, (area.areaDetector.x, area.areaDetector.y), 
+                      (area.areaDetector.x + area.areaDetector.width, area.areaDetector.y + area.areaDetector.height), (0, 255, 255), 2)
+
+'''
