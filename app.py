@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 import inputModule as im
 
-areas : List[im.AreaInputController] = []
+
+
+areas = []
 
 areas.append(im.AreaInputController(im.AreaDetector(0,0,100,100),im.InputEmitter("t")))
 
