@@ -1,5 +1,23 @@
 import cv2
 import numpy as np
+import inputModule as im
+
+areas : List[im.AreaInputController] = []
+
+areas.append(im.AreaInputController(im.AreaDetector(0,0,100,100),im.InputEmitter("t")))
+
+
+
+
+target_color = np.array([42,23,206])
+target_color_range = 50
+delta = .1
+chunk_size = 10
+show_chunks = True  # Set this to True to show the chunks, False to hide them
+
+
+
+
 
 def calculate_average_color(region):
     return np.mean(region, axis=(0, 1))
@@ -34,17 +52,13 @@ def process_frame(frame, target_color, target_color_range, chunk_size, show_chun
     
     return average_position
 
+
 video = cv2.VideoCapture(0)
-target_color = np.array([42,23,206])
-target_color_range = 50
-chunk_size = 10
-show_chunks = True  # Set this to True to show the chunks, False to hide them
 
 # the predicted position
 currPositionX = None
 currPositionY = None
 
-delta = .1
 
 while True:
     check, frame = video.read()
